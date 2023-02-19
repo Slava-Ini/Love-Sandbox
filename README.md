@@ -2,7 +2,7 @@
 
 ## Installation
 
-- Clone the ripository `git clone https://github.com/Slava-Ini/Love-Sandbox.git`
+- Clone the repository `git clone https://github.com/Slava-Ini/Love-Sandbox.git`
 - Install *Love 2d* on your machine
 - Install *Lua* on your machine
 - Got to *Love-Sandbox*
