@@ -28,12 +28,9 @@
 
 (fn bird-collids? [x y]
   ;; Bird's left side < x's right side
-  (and (< bird-x (+ x pipe-width)) 
-       ;; Bird's right side > x's left side
-       (> (+ bird-x bird-width) x) 
-       ;; Bird's bottom < y's bottom
-       (or (< bird-y y) 
-           ;; Bird's top > y's top
+  (and (< bird-x (+ x pipe-width)) ;; Bird's right side > x's left side
+       (> (+ bird-x bird-width) x) ;; Bird's bottom < y's bottom
+       (or (< bird-y y) ;; Bird's top > y's top
            (> (+ bird-y bird-height) (+ y pipe-space-height)))))
 
 (fn draw-pipe [x y]
