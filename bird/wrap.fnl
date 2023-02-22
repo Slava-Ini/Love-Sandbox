@@ -9,6 +9,7 @@
 (local bird-width 30)
 (local bird-height 25)
 (local bird-x 62)
+(local bird-max-y-speed 700)
 
 ;; State
 (var bird-y 0)
@@ -67,7 +68,9 @@
 
 (fn love.update [dt]
   ;; - Define bird movement
-  (set bird-y-speed (+ bird-y-speed (* 516 dt)))
+  (local new-bird-y-speed (+ bird-y-speed (* 516 dt)))
+  (if (< new-bird-y-speed bird-max-y-speed)
+    (set bird-y-speed new-bird-y-speed))
   (set bird-y (+ bird-y (* bird-y-speed dt)))
   ;; - Define pipe movement
   (set (pipe-one-x pipe-one-space-y) (move-pipe dt pipe-one-x pipe-one-space-y))
