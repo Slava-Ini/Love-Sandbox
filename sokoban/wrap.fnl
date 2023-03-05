@@ -73,7 +73,6 @@
         (love.graphics.print (. level y x) (* cell-size (- x 1))
                              (* cell-size (- y 1)) 0 font-scale font-scale)))))
 
-;; TODO: refactor this mess
 (fn love.keypressed [key]
   (when (or (= key :up) (= key :down) (= key :left) (= key :right))
     (var (player-x player-y) (values nil nil))
@@ -86,46 +85,72 @@
     (local current (. level player-y player-x))
     (local adjacent (. level (+ player-y dy) (+ player-x dx)))
     (local player-position [player-x player-y])
+    (local next-player-position [(+ player-x dx) (+ player-y dy)])
+
+    ;; TODO remove this and function
     (debug-print player-x player-y current :player)
     (debug-print (+ player-x dx) (+ player-y dy) adjacent key)
+
     (local beyond (?. level (+ player-y dy dy) (+ player-x dx dx)))
+
+    (local next-adjacent {:empty :player
+                          :storage :player-on-storage})
+    (local next-adjacent-push {:box :player
+                          :box-on-storage :player-on-storage})
+    (local next-current {:player :empty
+                          :player-on-storage :storage})
+    (local next-beyond {:empty :box
+                          :storage :box-on-storage})
+
+    ;; TODO: continue refactoring
+    (when (. next-adjacent adjacent)
+      (print "boo"))
+
     ;; When we have player
     (when (= current (. cell-name :player))
+
       ;; If there is empty cell in front of him, move player there
       (if (= adjacent (. cell-name :empty))
           (swap-cells player-position key :player :empty))
+
       ;; If there is storage cell in front of him, move player there and change the wayhe is displayed
       (if (= adjacent (. cell-name :storage))
           (swap-cells player-position key :player-on-storage :empty))
+
       ;; When there is a box on storage and empty space in front of it
       (when (and (= adjacent (. cell-name :box-on-storage))
                  (= beyond (. cell-name :empty)))
         ;; Move player
         (swap-cells player-position key :player :empty)
         ;; Move box
-        (swap-cells [(+ player-x dx) (+ player-y dy)] key :box :player))
+        (swap-cells next-player-position key :box :player-on-storage))
+
       ;; When there is a box on storage and storage in front of it
       (when (and (= adjacent (. cell-name :box-on-storage))
                  (= beyond (. cell-name :storage)))
         ;; Move player
         (swap-cells player-position key :player :empty)
         ;; Move box
-        (swap-cells [(+ player-x dx) (+ player-y dy)] key :box-on-storage :player-on-storage))
+        (swap-cells next-player-position key :box-on-storage :player-on-storage))
+
       ;; When we have player and a box in front of him + space behind the box is empty
       (when (and (= adjacent (. cell-name :box))
                  (= beyond (. cell-name :empty)))
         ;; Move player
         (swap-cells player-position key :player :empty)
         ;; Move box
-        (swap-cells [(+ player-x dx) (+ player-y dy)] key :box :player))
-      ;; If there is a box and storage in front of it  
+        (swap-cells next-player-position key :box :player))
+
+      ;; When there is a box and storage in front of it  
       (when (and (= adjacent (. cell-name :box))
                  (= beyond (. cell-name :storage)))
         ;; Move player
         (swap-cells player-position key :player :empty)
         ;; Move box
-        (swap-cells [(+ player-x dx) (+ player-y dy)] key :box-on-storage
+        (swap-cells next-player-position key :box-on-storage
                     :player)))
+
+
     ;; When we have player standing on storage
     (when (= current (. cell-name :player-on-storage))
       ;; If there is empty cell in front of him, move player there
@@ -140,26 +165,26 @@
         ;; Move player
         (swap-cells player-position key :player-on-storage :storage)
         ;; Move box
-        (swap-cells [(+ player-x dx) (+ player-y dy)] key :box :player-on-storage))
+        (swap-cells next-player-position key :box :player-on-storage))
       ;; When there is a box on storage and storage in front of it
       (when (and (= adjacent (. cell-name :box-on-storage))
                  (= beyond (. cell-name :storage)))
         ;; Move player
         (swap-cells player-position key :player :storage)
         ;; Move box
-        (swap-cells [(+ player-x dx) (+ player-y dy)] key :box-on-storage :player-on-storage))
+        (swap-cells next-player-position key :box-on-storage :player-on-storage))
       ;; If there is a box and empty space in front of it
       (when (and (= adjacent (. cell-name :box))
                  (= beyond (. cell-name :empty)))
         ;; Move player
         (swap-cells player-position key :player :storage)
         ;; Move box
-        (swap-cells [(+ player-x dx) (+ player-y dy)] key :box :player))
+        (swap-cells next-player-position key :box :player))
       ;; If there is a box and storage in front of it  
       (when (and (= adjacent (. cell-name :box))
                  (= beyond (. cell-name :storage)))
         ;; Move player
         (swap-cells player-position key :player :storage)
         ;; Move box
-        (swap-cells [(+ player-x dx) (+ player-y dy)] key :box-on-storage
+        (swap-cells next-player-position key :box-on-storage
                     :player)))))
