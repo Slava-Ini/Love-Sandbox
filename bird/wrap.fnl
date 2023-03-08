@@ -1,4 +1,4 @@
-;; Constants
+;; --- Constants
 (local playing-area-width 300)
 (local playing-area-height 388)
 
@@ -11,7 +11,7 @@
 (local bird-x 62)
 (local bird-max-y-speed 700)
 
-;; State
+;; --- State
 (var bird-y 0)
 (var bird-y-speed 0)
 
@@ -23,15 +23,15 @@
 
 (var score 0)
 
-;; -- Helper functions --
+;; --- Helper functions
 (fn get-random-pipe-y []
   (love.math.random pipe-space-min (- playing-area-height pipe-space-height)))
 
 (fn bird-collids? [x y]
-  ;; Bird's left side < x's right side
-  (and (< bird-x (+ x pipe-width)) ;; Bird's right side > x's left side
-       (> (+ bird-x bird-width) x) ;; Bird's bottom < y's bottom
-       (or (< bird-y y) ;; Bird's top > y's top
+  ;; - Bird's left side < x's right side
+  (and (< bird-x (+ x pipe-width)) ;;  - Bird's right side > x's left side
+       (> (+ bird-x bird-width) x) ;; - Bird's bottom < y's bottom
+       (or (< bird-y y) ;; - Bird's top > y's top
            (> (+ bird-y bird-height) (+ y pipe-space-height)))))
 
 (fn draw-pipe [x y]
@@ -40,7 +40,7 @@
   (love.graphics.rectangle :fill x (+ y pipe-space-height) pipe-width
                            (- playing-area-height y)))
 
-(fn move-pipe [dt pipe-x pipe-space-y] ; (local (one tw))
+(fn move-pipe [dt pipe-x pipe-space-y]
   (local res-pipe-x (- pipe-x (* 60 dt)))
   (if (< (+ res-pipe-x pipe-width) 0)
       (values playing-area-width (get-random-pipe-y))
@@ -51,15 +51,15 @@
     (set score (+ score 1))
     (set upcoming-pipe next-pipe)))
 
-;; -- Love methods --
+;; --- Love methods
 (fn love.load []
-  ;; Set score
+  ;; - Set score
   (set score 0)
-  ;; Set next pipe
+  ;; - Set next pipe
   (set upcoming-pipe 1)
-  ;; Set bird starting y
+  ;; - Set bird starting y
   (set bird-y 200)
-  ;; Set pipes starting position
+  ;; - Set pipes starting position
   (set pipe-one-x playing-area-width)
   (set pipe-two-x
        (+ playing-area-width (/ (+ playing-area-width pipe-width) 2)))
@@ -75,12 +75,12 @@
   ;; - Define pipe movement
   (set (pipe-one-x pipe-one-space-y) (move-pipe dt pipe-one-x pipe-one-space-y))
   (set (pipe-two-x pipe-two-space-y) (move-pipe dt pipe-two-x pipe-two-space-y))
-  ;; Bird and pipe collision
+  ;; - Bird and pipe collision
   (if (or (bird-collids? pipe-one-x pipe-one-space-y)
           (bird-collids? pipe-two-x pipe-two-space-y)
           (> bird-y playing-area-height))
       (love.load))
-  ;; Update score 
+  ;; - Update score 
   (update-score 1 pipe-one-x 2)
   (update-score 2 pipe-two-x 1))
 

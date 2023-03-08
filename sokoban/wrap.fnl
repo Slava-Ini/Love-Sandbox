@@ -1,4 +1,4 @@
-;; Constants
+;; --- Constants
 ; (local level [[" " " " "#" "#" "#"]
 ;               [" " " " "#" "." "#"]
 ;               [" " " " "#" " " "#" "#" "#" "#"]
@@ -39,22 +39,15 @@
 
 (local around {:left [-1 0] :right [1 0] :up [0 -1] :down [0 1]})
 
-;; Debug methods
-(fn debug-print [x y value name]
-  (print (.. name " coords: " x " " y " value: (" value ")")))
-
-(local fennel (require :fennel))
-(fn _G.pp [x] (print (fennel.view x)))
-
-;; Utility methods
-(fn swap-cells [player-position direction src-cell dest-cell]
+;; --- Utility methods
+(fn swap-cells [src-position direction src-cell dest-cell]
   (local [dx dy] (. around direction))
-  (local [player-x player-y] player-position)
-  (local (empty-x empty-y) (values (+ player-x dx) (+ player-y dy))) ; `y` comes first because `level` outter index is `y`
-  (tset level player-y player-x (. cell-name dest-cell))
-  (tset level empty-y empty-x (. cell-name src-cell)))
+  (local [src-x src-y] src-position)
+  (local (dest-x dest-y) (values (+ src-x dx) (+ src-y dy))) 
+  (tset level src-y src-x src-cell)
+  (tset level dest-y dest-x dest-cell))
 
-;; Love methods
+;; --- Love methods
 (fn love.load []
   (love.graphics.setBackgroundColor 1 1 0.75))
 
@@ -64,127 +57,60 @@
   (each [y row (ipairs level)]
     (each [x cell (ipairs row)]
       (when (not= cell " ")
-        ;; Draw non-empty cells
+        ;; - Draw non-empty cells
         (love.graphics.setColor (. colors cell))
         (love.graphics.rectangle :fill (* cell-size (- x 1))
                                  (* cell-size (- y 1)) cell-size cell-size)
-        ;; Fill non-empty cells with symbols
+        ;; - Fill non-empty cells with symbols
         (love.graphics.setColor 1 1 1)
         (love.graphics.print (. level y x) (* cell-size (- x 1))
                              (* cell-size (- y 1)) 0 font-scale font-scale)))))
 
 (fn love.keypressed [key]
+  ;; - Find player position
   (when (or (= key :up) (= key :down) (= key :left) (= key :right))
+    ;; TODO: make player position definition here ?
     (var (player-x player-y) (values nil nil))
     (each [test-y row (ipairs level)]
       (each [test-x cell (ipairs row)]
         (when (or (= cell (. cell-name :player))
                   (= cell (. cell-name :player-on-storage)))
           (set (player-x player-y) (values test-x test-y)))))
+
+    ;; - Define player coordinates
     (local [dx dy] (. around key))
-    (local current (. level player-y player-x))
-    (local adjacent (. level (+ player-y dy) (+ player-x dx)))
     (local player-position [player-x player-y])
     (local next-player-position [(+ player-x dx) (+ player-y dy)])
 
-    ;; TODO remove this and function
-    (debug-print player-x player-y current :player)
-    (debug-print (+ player-x dx) (+ player-y dy) adjacent key)
-
+    ;; - Define cells values
+    (local current (. level player-y player-x))
+    (local adjacent (. level (+ player-y dy) (+ player-x dx)))
     (local beyond (?. level (+ player-y dy dy) (+ player-x dx dx)))
 
-    (local next-adjacent {:empty :player
-                          :storage :player-on-storage})
-    (local next-adjacent-push {:box :player
-                          :box-on-storage :player-on-storage})
-    (local next-current {:player :empty
-                          :player-on-storage :storage})
-    (local next-beyond {:empty :box
-                          :storage :box-on-storage})
+    ;; - Define rules of movement
+    (local next-adjacent
+           {(. cell-name :empty) (. cell-name :player)
+            (. cell-name :storage) (. cell-name :player-on-storage)})
+    (local next-adjacent-push
+           {(. cell-name :box) (. cell-name :player)
+            (. cell-name :box-on-storage) (. cell-name :player-on-storage)})
+    (local next-current
+           {(. cell-name :player) (. cell-name :empty)
+            (. cell-name :player-on-storage) (. cell-name :storage)})
+    (local next-beyond
+           {(. cell-name :empty) (. cell-name :box)
+            (. cell-name :storage) (. cell-name :box-on-storage)})
 
-    ;; TODO: continue refactoring
+    ;; - Define the movement of player to adjacent cell by rules
     (when (. next-adjacent adjacent)
-      (print "boo"))
+      (let [dest (. next-adjacent adjacent)
+            src (. next-current current)]
+        (swap-cells player-position key src dest)))
 
-    ;; When we have player
-    (when (= current (. cell-name :player))
-
-      ;; If there is empty cell in front of him, move player there
-      (if (= adjacent (. cell-name :empty))
-          (swap-cells player-position key :player :empty))
-
-      ;; If there is storage cell in front of him, move player there and change the wayhe is displayed
-      (if (= adjacent (. cell-name :storage))
-          (swap-cells player-position key :player-on-storage :empty))
-
-      ;; When there is a box on storage and empty space in front of it
-      (when (and (= adjacent (. cell-name :box-on-storage))
-                 (= beyond (. cell-name :empty)))
-        ;; Move player
-        (swap-cells player-position key :player :empty)
-        ;; Move box
-        (swap-cells next-player-position key :box :player-on-storage))
-
-      ;; When there is a box on storage and storage in front of it
-      (when (and (= adjacent (. cell-name :box-on-storage))
-                 (= beyond (. cell-name :storage)))
-        ;; Move player
-        (swap-cells player-position key :player :empty)
-        ;; Move box
-        (swap-cells next-player-position key :box-on-storage :player-on-storage))
-
-      ;; When we have player and a box in front of him + space behind the box is empty
-      (when (and (= adjacent (. cell-name :box))
-                 (= beyond (. cell-name :empty)))
-        ;; Move player
-        (swap-cells player-position key :player :empty)
-        ;; Move box
-        (swap-cells next-player-position key :box :player))
-
-      ;; When there is a box and storage in front of it  
-      (when (and (= adjacent (. cell-name :box))
-                 (= beyond (. cell-name :storage)))
-        ;; Move player
-        (swap-cells player-position key :player :empty)
-        ;; Move box
-        (swap-cells next-player-position key :box-on-storage
-                    :player)))
-
-
-    ;; When we have player standing on storage
-    (when (= current (. cell-name :player-on-storage))
-      ;; If there is empty cell in front of him, move player there
-      (if (= adjacent (. cell-name :empty))
-          (swap-cells player-position key :player :storage))
-      ;; If there is storage in front of him, move player there
-      (if (= adjacent (. cell-name :storage))
-          (swap-cells player-position key :player-on-storage :storage))
-      ;; When there is a box on storage and empty space in front of it
-      (when (and (= adjacent (. cell-name :box-on-storage))
-                 (= beyond (. cell-name :empty)))
-        ;; Move player
-        (swap-cells player-position key :player-on-storage :storage)
-        ;; Move box
-        (swap-cells next-player-position key :box :player-on-storage))
-      ;; When there is a box on storage and storage in front of it
-      (when (and (= adjacent (. cell-name :box-on-storage))
-                 (= beyond (. cell-name :storage)))
-        ;; Move player
-        (swap-cells player-position key :player :storage)
-        ;; Move box
-        (swap-cells next-player-position key :box-on-storage :player-on-storage))
-      ;; If there is a box and empty space in front of it
-      (when (and (= adjacent (. cell-name :box))
-                 (= beyond (. cell-name :empty)))
-        ;; Move player
-        (swap-cells player-position key :player :storage)
-        ;; Move box
-        (swap-cells next-player-position key :box :player))
-      ;; If there is a box and storage in front of it  
-      (when (and (= adjacent (. cell-name :box))
-                 (= beyond (. cell-name :storage)))
-        ;; Move player
-        (swap-cells player-position key :player :storage)
-        ;; Move box
-        (swap-cells next-player-position key :box-on-storage
-                    :player)))))
+    ;; - Define the box push and corresponding player movement according to rules
+    (when (and (. next-beyond beyond) (. next-adjacent-push adjacent))
+      (let [push-dest (. next-beyond beyond)
+            push-src (. next-adjacent-push adjacent)
+            src (. next-current current)]
+        (swap-cells next-player-position key push-src push-dest)
+        (swap-cells player-position key src push-src)))))
