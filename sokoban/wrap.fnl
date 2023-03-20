@@ -1,23 +1,5 @@
-;; --- Constants
-; (local level [[" " " " "#" "#" "#"]
-;               [" " " " "#" "." "#"]
-;               [" " " " "#" " " "#" "#" "#" "#"]
-;               ["#" "#" "#" "$" " " "$" "." "#"]
-;               ["#" "." " " "$" "@" "#" "#" "#"]
-;               ["#" "#" "#" "#" "$" "#"]
-;               [" " " " " " "#" "." "#"]
-;               [" " " " " " "#" "#" "#"]])
-(local level [["#" "#" "#" "#" "#"]
-              ["#" "@" " " "." "#"]
-              ["#" " " "$" " " "#"]
-              ["#" "." "$" " " "#"]
-              ["#" " " "$" "." "#"]
-              ["#" "." "$" "." "#"]
-              ["#" "." "*" " " "#"]
-              ["#" " " "*" "." "#"]
-              ["#" " " "*" " " "#"]
-              ["#" "." "*" "." "#"]
-              ["#" "#" "#" "#" "#"]])
+(local {: levels } (require :levels))
+(local fennel (require :fennel))
 
 (local cell-name {:player "@"
                   :player-on-storage "+"
@@ -38,6 +20,10 @@
 (local font-scale (/ cell-size 25))
 
 (local around {:left [-1 0] :right [1 0] :up [0 -1] :down [0 1]})
+
+;; --- Globals
+(var current-level 1)
+(local level (. levels current-level))
 
 ;; --- Utility methods
 (fn swap-cells [src-position direction src-cell dest-cell]
@@ -67,15 +53,14 @@
                              (* cell-size (- y 1)) 0 font-scale font-scale)))))
 
 (fn love.keypressed [key]
-  ;; - Find player position
   (when (or (= key :up) (= key :down) (= key :left) (= key :right))
-    ;; TODO: make player position definition here ?
+    ;; - Find player position
     (var (player-x player-y) (values nil nil))
-    (each [test-y row (ipairs level)]
-      (each [test-x cell (ipairs row)]
+    (each [y row (ipairs level)]
+      (each [x cell (ipairs row)]
         (when (or (= cell (. cell-name :player))
                   (= cell (. cell-name :player-on-storage)))
-          (set (player-x player-y) (values test-x test-y)))))
+          (set (player-x player-y) (values x y)))))
 
     ;; - Define player coordinates
     (local [dx dy] (. around key))
