@@ -1,6 +1,7 @@
-(local {: levels } (require :levels))
 (local fennel (require :fennel))
+(local {: levels } (require :levels))
 
+;; --- Constants
 (local cell-name {:player "@"
                   :player-on-storage "+"
                   :box "$"
@@ -23,7 +24,7 @@
 
 ;; --- Globals
 (var current-level 1)
-(local level (. levels current-level))
+(var level [])
 
 ;; --- Utility methods
 (fn swap-cells [src-position direction src-cell dest-cell]
@@ -33,9 +34,24 @@
   (tset level src-y src-x src-cell)
   (tset level dest-y dest-x dest-cell))
 
+(fn load-level []
+  (set level [])
+  (if (not= (. levels current-level) nil)
+    (each [y row (ipairs (. levels current-level))]
+      (tset level y [])
+      (each [x cell (ipairs row)]
+        (tset level y x cell)))))
+
+(fn load-next-level []
+  (set current-level (+ current-level 1))
+    (if (> current-level (length levels))
+      (set current-level 1))
+    (load-level))
+
 ;; --- Love methods
 (fn love.load []
-  (love.graphics.setBackgroundColor 1 1 0.75))
+  (love.graphics.setBackgroundColor 1 1 0.75)
+  (load-level))
 
 (fn love.update [dt])
 
@@ -53,9 +69,27 @@
                              (* cell-size (- y 1)) 0 font-scale font-scale)))))
 
 (fn love.keypressed [key]
+  ;; - Load next level
+  (when (= key :n)
+    (load-next-level))
+
+  ;; - Load previous level
+  (when (= key :p)
+    (set current-level (- current-level 1))
+    (if (< current-level 1)
+      (set current-level (length levels)))
+    (load-level))
+
+  ;; - Reset level
+  (when (= key :r)
+    (load-level))
+
+  ;; - Move player
   (when (or (= key :up) (= key :down) (= key :left) (= key :right))
-    ;; - Find player position
     (var (player-x player-y) (values nil nil))
+    (var is-complete true)
+
+    ;; - Find player position
     (each [y row (ipairs level)]
       (each [x cell (ipairs row)]
         (when (or (= cell (. cell-name :player))
@@ -98,4 +132,13 @@
             push-src (. next-adjacent-push adjacent)
             src (. next-current current)]
         (swap-cells next-player-position key push-src push-dest)
-        (swap-cells player-position key src push-src)))))
+        (swap-cells player-position key src push-src)))
+    
+    ;; - Check if the level is complete
+    (each [y row (ipairs level)]
+      (each [x cell (ipairs row)]
+        (if (= cell (. cell-name :box))
+          (set is-complete false))))
+    
+    (if is-complete
+      (load-next-level))))
