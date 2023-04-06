@@ -27,7 +27,7 @@
 (fn get-random-pipe-y []
   (love.math.random pipe-space-min (- playing-area-height pipe-space-height)))
 
-(fn bird-collids? [x y]
+(fn bird-collides? [x y]
   ;; - Bird's left side < x's right side
   (and (< bird-x (+ x pipe-width)) ;;  - Bird's right side > x's left side
        (> (+ bird-x bird-width) x) ;; - Bird's bottom < y's bottom
@@ -76,8 +76,8 @@
   (set (pipe-one-x pipe-one-space-y) (move-pipe dt pipe-one-x pipe-one-space-y))
   (set (pipe-two-x pipe-two-space-y) (move-pipe dt pipe-two-x pipe-two-space-y))
   ;; - Bird and pipe collision
-  (if (or (bird-collids? pipe-one-x pipe-one-space-y)
-          (bird-collids? pipe-two-x pipe-two-space-y)
+  (if (or (bird-collides? pipe-one-x pipe-one-space-y)
+          (bird-collides? pipe-two-x pipe-two-space-y)
           (> bird-y playing-area-height))
       (love.load))
   ;; - Update score 
